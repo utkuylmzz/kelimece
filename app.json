@@ -1,13 +1,15 @@
 {
   "expo": {
-    "name": "kelimece",
+    "name": "Kelimece",
     "slug": "kelimece",
     "version": "1.0.0",
+    "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.utkuy.kelimece"
     },
     "android": {
       "adaptiveIcon": {
@@ -16,10 +18,46 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.utkuy.kelimece"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "userTrackingUsageDescription": "Bu tanımlayıcı, size daha alakalı reklamlar göstermek için kullanılacaktır."
+        }
+      ],
+      "expo-audio",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#FAF7F2"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.2.20"
+          }
+        }
+      ],
+      "./plugins/withGoogleMobileAdsKotlinFix"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "bdc1b35e-bab5-49be-97b3-b48cd50d8a7a"
+      }
+    },
+    "owner": "utkuylmz"
   }
 }

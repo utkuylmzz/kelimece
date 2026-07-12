@@ -3,20 +3,42 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
-    "expo": "~57.0.4",
-    "expo-status-bar": "~57.0.0",
-    "react": "19.2.3",
-    "react-native": "0.86.0"
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "^54.0.35",
+    "expo-asset": "~12.0.13",
+    "expo-audio": "~1.1.1",
+    "expo-build-properties": "~1.0.10",
+    "expo-dev-client": "~6.0.21",
+    "expo-splash-screen": "~31.0.13",
+    "expo-status-bar": "~3.0.9",
+    "expo-system-ui": "~6.0.9",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-google-mobile-ads": "^16.0.0",
+    "react-native-safe-area-context": "~5.6.0"
   },
   "devDependencies": {
-    "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
+    "@types/jest": "29.5.14",
+    "@types/react": "~19.1.0",
+    "eas-cli": "^20.5.1",
+    "jest": "^29.7.0",
+    "jest-expo": "^54.0.0",
+    "typescript": "~5.9.2"
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "words": "node scripts/process-words.js"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|react-native-google-mobile-ads)"
+    ]
   },
   "private": true
 }
