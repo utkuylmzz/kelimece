@@ -5,10 +5,11 @@ import { useSettings } from '../context/SettingsContext';
 interface Props {
   onPress: () => void;
   disabled: boolean;
+  label?: string;
 }
 
 /** Ekranda ayrı, belirgin gönder butonu — klavyedeki gizli Enter tuşu yerine. */
-export default function SubmitButton({ onPress, disabled }: Props) {
+export default function SubmitButton({ onPress, disabled, label = 'GÖNDER' }: Props) {
   const { theme } = useSettings();
   return (
     <Pressable
@@ -22,7 +23,7 @@ export default function SubmitButton({ onPress, disabled }: Props) {
         },
       ]}
     >
-      <Text style={styles.text}>GÖNDER</Text>
+      <Text style={styles.text}>{label}</Text>
     </Pressable>
   );
 }

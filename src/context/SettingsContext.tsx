@@ -10,11 +10,13 @@ import { getTheme, Theme } from '../theme/colors';
 import { KEYS, loadJson, saveJson } from '../utils/storage';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
+export type Difficulty = 'easy' | 'hard';
 
 interface Settings {
   themePreference: ThemePreference;
   colorBlind: boolean;
   soundEnabled: boolean;
+  difficulty: Difficulty;
 }
 
 interface SettingsContextValue extends Settings {
@@ -23,6 +25,7 @@ interface SettingsContextValue extends Settings {
   setThemePreference: (p: ThemePreference) => void;
   setColorBlind: (v: boolean) => void;
   setSoundEnabled: (v: boolean) => void;
+  setDifficulty: (v: Difficulty) => void;
   loaded: boolean;
 }
 
@@ -30,6 +33,7 @@ const DEFAULTS: Settings = {
   themePreference: 'system',
   colorBlind: false,
   soundEnabled: true,
+  difficulty: 'hard',
 };
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -67,6 +71,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       setThemePreference: (p) => update({ themePreference: p }),
       setColorBlind: (v) => update({ colorBlind: v }),
       setSoundEnabled: (v) => update({ soundEnabled: v }),
+      setDifficulty: (v) => update({ difficulty: v }),
       loaded,
     }),
     [settings, isDark, loaded]

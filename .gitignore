@@ -30,7 +30,8 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files (Supabase anahtarları vb.) — .env.example commit edilir
+.env
 .env*.local
 
 # typescript

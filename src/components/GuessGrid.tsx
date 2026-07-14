@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSettings } from '../context/SettingsContext';
-import { GuessEvaluation, MAX_GUESSES, WORD_LENGTH } from '../utils/gameLogic';
+import { ActiveCell, GuessEvaluation, MAX_GUESSES, WORD_LENGTH } from '../utils/gameLogic';
 import { toUpperTr } from '../utils/turkish';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -19,11 +19,16 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 interface Props {
   guesses: string[];
   evaluations: GuessEvaluation[];
-  currentGuess: string;
+  /** Aktif satır hücreleri; kilitli olanlar (ipucu/yeşil) önceden dolu gelir */
+  activeRow: ActiveCell[];
   /** true ise aktif satır "geçersiz kelime" görünümüyle vurgulanır */
   invalid: boolean;
   /** true iken tamamlanan satırların altına aktif + önizleme satırı eklenir */
   showActiveRow: boolean;
+  /** Varsayılan: gameLogic.WORD_LENGTH (Günlük/Sürekli mod, 5 harf) */
+  wordLength?: number;
+  /** Varsayılan: gameLogic.MAX_GUESSES (Günlük/Sürekli mod, 6 hak) */
+  maxGuesses?: number;
 }
 
 type RowRole = 'history' | 'active' | 'preview';
@@ -31,13 +36,15 @@ type RowRole = 'history' | 'active' | 'preview';
 export default function GuessGrid({
   guesses,
   evaluations,
-  currentGuess,
+  activeRow,
   invalid,
   showActiveRow,
+  wordLength = WORD_LENGTH,
+  maxGuesses = MAX_GUESSES,
 }: Props) {
   const { theme } = useSettings();
   const { width } = useWindowDimensions();
-  const baseSize = Math.min(62, (width - 40 - (WORD_LENGTH - 1) * 6) / WORD_LENGTH);
+  const baseSize = Math.min(62, (width - 40 - (wordLength - 1) * 6) / wordLength);
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
   // Geçersiz tahmin (kısa veya sözlükte olmayan kelime): aktif satırı silkeleyerek
@@ -61,7 +68,7 @@ export default function GuessGrid({
 
   // Geçmiş (tamamlanmış) satırlar küçük gösterilir, aktif satır büyük ve net,
   // bir sonraki hakkın önizlemesi küçük ve soluk şekilde altta bekler.
-  const totalRows = Math.min(MAX_GUESSES, guesses.length + (showActiveRow ? 2 : 0));
+  const totalRows = Math.min(maxGuesses, guesses.length + (showActiveRow ? 2 : 0));
 
   const rows = [];
   for (let r = 0; r < totalRows; r++) {
@@ -72,12 +79,14 @@ export default function GuessGrid({
     const tileSize = role === 'history' ? baseSize * 0.6 : role === 'preview' ? baseSize * 0.55 : baseSize;
     const rowOpacity = role === 'preview' ? 0.35 : 1;
 
-    const word = role === 'history' ? guesses[r] : role === 'active' ? currentGuess : '';
+    const word = role === 'history' ? guesses[r] : '';
     const evalRow = role === 'history' ? evaluations[r] : null;
 
     const tiles = [];
-    for (let c = 0; c < WORD_LENGTH; c++) {
-      const letter = word[c] ?? '';
+    for (let c = 0; c < wordLength; c++) {
+      const activeCell = role === 'active' ? activeRow[c] : null;
+      const letter = role === 'history' ? (word[c] ?? '') : (activeCell?.letter ?? '');
+      const isLockedCell = activeCell?.locked ?? false;
       const state = evalRow ? evalRow[c] : null;
       tiles.push(
         <View
@@ -86,6 +95,9 @@ export default function GuessGrid({
             styles.tile,
             { width: tileSize, height: tileSize, borderColor: theme.tileBorder },
             letter !== '' && !state && { borderColor: theme.tileBorderFilled },
+            // Kilitli (önceden açılmış) hücre: hafif vurgulu çerçeveyle "verili"
+            // olduğu belli olur, kullanıcı buraya yazamaz/silemez.
+            isLockedCell && { borderColor: theme.accent },
             isActive && invalid && { borderColor: '#D32F2F' },
             state != null && {
               backgroundColor: theme.states[state],
@@ -97,7 +109,7 @@ export default function GuessGrid({
             style={[
               styles.letter,
               { fontSize: tileSize * 0.5 },
-              { color: state ? theme.stateText : theme.text },
+              { color: state ? theme.stateText : isLockedCell ? theme.accent : theme.text },
             ]}
           >
             {toUpperTr(letter)}

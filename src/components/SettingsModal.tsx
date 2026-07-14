@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import AppModal from './AppModal';
 import { useGame } from '../context/GameContext';
-import { ThemePreference, useSettings } from '../context/SettingsContext';
+import { Difficulty, ThemePreference, useSettings } from '../context/SettingsContext';
 
 interface Props {
   visible: boolean;
@@ -16,6 +16,11 @@ const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: 'dark', label: 'Karanlık' },
 ];
 
+const DIFFICULTY_OPTIONS: { value: Difficulty; label: string }[] = [
+  { value: 'easy', label: 'Kolay' },
+  { value: 'hard', label: 'Zor' },
+];
+
 export default function SettingsModal({ visible, onClose, onShowHelp }: Props) {
   const {
     theme,
@@ -25,6 +30,8 @@ export default function SettingsModal({ visible, onClose, onShowHelp }: Props) {
     setColorBlind,
     soundEnabled,
     setSoundEnabled,
+    difficulty,
+    setDifficulty,
   } = useSettings();
   const { devResetDaily, devResetStats } = useGame();
 
@@ -51,6 +58,31 @@ export default function SettingsModal({ visible, onClose, onShowHelp }: Props) {
           );
         })}
       </View>
+
+      <Text style={[styles.label, { color: theme.text }]}>Zorluk</Text>
+      <View style={styles.segment}>
+        {DIFFICULTY_OPTIONS.map((opt) => {
+          const active = difficulty === opt.value;
+          return (
+            <Pressable
+              key={opt.value}
+              onPress={() => setDifficulty(opt.value)}
+              style={[
+                styles.segmentItem,
+                { borderColor: theme.tileBorder },
+                active && { backgroundColor: theme.accent, borderColor: theme.accent },
+              ]}
+            >
+              <Text style={{ color: active ? '#fff' : theme.text, fontWeight: '600' }}>
+                {opt.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Text style={[styles.hint, { color: theme.textMuted, marginBottom: 20 }]}>
+        Kolay modda her bulmaca başında rastgele bir harf açık gösterilir
+      </Text>
 
       <View style={styles.switchRow}>
         <View style={{ flex: 1 }}>

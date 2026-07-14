@@ -10,6 +10,8 @@ const fs = require('fs');
 const path = require('path');
 
 const TURKISH_LETTERS = /^[abcçdefgğhıijklmnoöprsştuüvyz]{5}$/;
+const TURKISH_LETTERS_6_9 = /^[abcçdefgğhıijklmnoöprsştuüvyz]{6,9}$/;
+const FANTASY_LENGTHS = [5, 6, 7, 8, 9];
 
 // Uygunsuz/argo kelime blok listesi (günün kelimesi VE geçerli tahmin listesinden çıkarılır)
 const BLOCKLIST = new Set([
@@ -568,6 +570,31 @@ const answers = [
   ),
 ].sort((a, b) => a.localeCompare(b, 'tr-TR'));
 
+// Çılgın modu: 5-9 harfli kelime havuzu. 5 harf → yukarıdaki `valid` (5.444
+// kelime, mevcut Wordle listesi). 6-9 harf → raw-words-6-9.txt: iki açık
+// kaynağın kesişimi — tdd-ai/hunspell-tr (MPL-2.0) kök listesi ile
+// CanNuhlar/Turkce-Kelime-Listesi (TDK İmla Kılavuzu bazlı) kesiştirilerek
+// hem lisanslı bir kaynaktan gelen hem gerçek/tam kelime olan girdiler seçildi
+// (hunspell kökleri tek başına ek almamış, çoğu zaman eksik/anlamsız
+// gövdelerdir — TDK listesiyle kesişim bu gövde çöplerini eler).
+const raw6to9 = fs.readFileSync(path.join(__dirname, 'raw-words-6-9.txt'), 'utf8');
+const words6to9 = [
+  ...new Set(
+    raw6to9
+      .split(/\r?\n/)
+      .map((w) => w.trim().toLocaleLowerCase('tr-TR'))
+      .filter((w) => TURKISH_LETTERS_6_9.test(w) && !isBlocked(w))
+  ),
+];
+const wordsByLength = Object.fromEntries(
+  FANTASY_LENGTHS.map((len) => [
+    len,
+    (len === 5 ? valid : words6to9.filter((w) => w.length === len)).sort((a, b) =>
+      a.localeCompare(b, 'tr-TR')
+    ),
+  ])
+);
+
 const header = '// Bu dosya scripts/process-words.js tarafından üretildi. Elle düzenlemeyin.\n';
 fs.writeFileSync(
   path.join(__dirname, '..', 'src', 'data', 'validWords.ts'),
@@ -583,4 +610,15 @@ fs.writeFileSync(
     JSON.stringify(answers) +
     ';\n'
 );
+fs.writeFileSync(
+  path.join(__dirname, '..', 'src', 'data', 'wordsByLength.ts'),
+  header +
+    'export const WORDS_BY_LENGTH: Readonly<Record<number, readonly string[]>> = ' +
+    JSON.stringify(wordsByLength) +
+    ';\n'
+);
 console.log('geçerli:', valid.length, '| günün kelimesi havuzu:', answers.length);
+console.log(
+  'çılgın mod havuzu:',
+  FANTASY_LENGTHS.map((len) => `${len}h:${wordsByLength[len].length}`).join(' ')
+);

@@ -1,5 +1,6 @@
 import { ANSWER_WORDS } from '../data/answerWords';
 import { VALID_WORDS } from '../data/validWords';
+import { WORDS_BY_LENGTH } from '../data/wordsByLength';
 import { toLowerTr } from './turkish';
 
 export const WORD_LENGTH = 5;
@@ -9,6 +10,8 @@ export const MAX_GUESSES = 6;
 export type LetterState = 'correct' | 'present' | 'absent';
 
 export type GuessEvaluation = LetterState[];
+
+export type GameStatus = 'playing' | 'won' | 'lost';
 
 /**
  * Klasik Wordle iki geçişli değerlendirme: önce doğru konumdakiler işaretlenir
@@ -45,9 +48,90 @@ export function evaluateGuess(guess: string, answer: string): GuessEvaluation {
 }
 
 const VALID_SET = new Set<string>(VALID_WORDS);
+const VALID_SETS_BY_LENGTH: Record<number, Set<string>> = Object.fromEntries(
+  Object.entries(WORDS_BY_LENGTH).map(([len, words]) => [Number(len), new Set(words)])
+);
 
-export function isValidWord(word: string): boolean {
-  return VALID_SET.has(toLowerTr(word));
+export function isValidWord(word: string, length: number = WORD_LENGTH): boolean {
+  const w = toLowerTr(word);
+  if (length === WORD_LENGTH) return VALID_SET.has(w);
+  return VALID_SETS_BY_LENGTH[length]?.has(w) ?? false;
+}
+
+/** Çılgın modu için tur başına deneme hakkı: uzunluk + 1 (5→6 … 9→10). */
+export function maxGuessesForLength(length: number): number {
+  return length + 1;
+}
+
+/**
+ * Sürekli/Çılgın modları için rastgele cevap seçer. `exclude` son oynanan
+ * kelimeleri tutar ki art arda aynı kelime çıkmasın (havuz o kadar
+ * daralırsa tekrar kaçınılmaz olabilir, o durumda tüm havuzdan seçilir).
+ */
+export function pickRandomWord(length: number, exclude: ReadonlySet<string> = new Set()): string {
+  const pool = WORDS_BY_LENGTH[length] ?? [];
+  const candidates = pool.filter((w) => !exclude.has(w));
+  const source = candidates.length > 0 ? candidates : pool;
+  return source[Math.floor(Math.random() * source.length)];
+}
+
+/** Kolay zorlukta tur başında açılacak rastgele harf indeksini seçer (tur bazlı modlar). */
+export function pickHintIndex(length: number): number {
+  return Math.floor(Math.random() * length);
+}
+
+/** Aktif satırdaki tek hücre: kilitliyse harf önceden açılmıştır, yazılamaz/silinemez. */
+export interface ActiveCell {
+  letter: string;
+  locked: boolean;
+}
+
+/**
+ * Önceden açılmış (kilitli) hücreleri hesaplar. Kolay modda: tur ipucusu +
+ * önceki tahminlerde doğru konumda bulunan harfler yerinde sabitlenir. Oturum
+ * ipucu hakkı (Sürekli mod) zorluktan bağımsız kendi hücresini kilitler.
+ */
+export function computeLockedLetters(
+  answer: string,
+  evaluations: GuessEvaluation[],
+  opts: { easy: boolean; hintIndex: number; sessionHintIndex?: number | null }
+): (string | null)[] {
+  const a = toLowerTr(answer);
+  const locked: (string | null)[] = new Array(a.length).fill(null);
+  if (opts.easy) {
+    locked[opts.hintIndex] = a[opts.hintIndex];
+    evaluations.forEach((row) =>
+      row.forEach((state, i) => {
+        if (state === 'correct') locked[i] = a[i];
+      })
+    );
+  }
+  if (opts.sessionHintIndex != null) {
+    locked[opts.sessionHintIndex] = a[opts.sessionHintIndex];
+  }
+  return locked;
+}
+
+/** Kilitli hücreler + sırayla yazılan harflerden aktif satırı oluşturur:
+ * yazılan her harf soldan sağa ilk boş (kilitsiz) hücreye yerleşir. */
+export function composeActiveRow(locked: (string | null)[], typed: string): ActiveCell[] {
+  const cells: ActiveCell[] = locked.map((l) => ({ letter: l ?? '', locked: l != null }));
+  let t = 0;
+  for (let i = 0; i < cells.length && t < typed.length; i++) {
+    if (!cells[i].locked) {
+      cells[i].letter = typed[t++];
+    }
+  }
+  return cells;
+}
+
+/**
+ * Günün bulmacası için ipucu harf indeksi — gün indeksinden deterministik
+ * türetilir (herkes aynı gün aynı ipucu konumunu görür), böylece ayrıca
+ * depolanmasına gerek kalmaz.
+ */
+export function getHintIndexForDay(dayIndex: number, length: number): number {
+  return hashDay(dayIndex + 0x5bd1e995) % length;
 }
 
 /** Oyunun 1. günü (yerel takvim). Bu tarihten itibaren gün sayılır. */

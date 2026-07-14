@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.utkuy.kelimece"
+      "package": "com.utkuy.kelimece",
+      "versionCode": 4
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -28,7 +29,7 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "androidAppId": "ca-app-pub-4610058472211087~1923862854",
           "iosAppId": "ca-app-pub-3940256099942544~1458002511",
           "userTrackingUsageDescription": "Bu tanımlayıcı, size daha alakalı reklamlar göstermek için kullanılacaktır."
         }

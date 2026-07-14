@@ -32,4 +32,12 @@ export const KEYS = {
   settings: 'kelimece/settings',
   interstitialDay: 'kelimece/interstitialDay',
   helpSeen: 'kelimece/helpSeen',
+  selectedMode: 'kelimece/selectedMode',
+  endlessRound: 'kelimece/endlessRound',
+  endlessStats: 'kelimece/endlessStats',
+  endlessInterstitialRound: 'kelimece/endlessInterstitialRound',
+  fantasyRound: 'kelimece/fantasyRound',
+  fantasyStats: 'kelimece/fantasyStats',
+  fantasyInterstitialRound: 'kelimece/fantasyInterstitialRound',
+  nickname: 'kelimece/nickname',
 } as const;

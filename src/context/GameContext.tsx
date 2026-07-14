@@ -9,9 +9,14 @@ import React, {
 } from 'react';
 import { LayoutAnimation } from 'react-native';
 import {
+  ActiveCell,
+  composeActiveRow,
+  computeLockedLetters,
   evaluateGuess,
+  GameStatus,
   getDailyWord,
   getDayIndex,
+  getHintIndexForDay,
   GuessEvaluation,
   isValidWord,
   LetterState,
@@ -20,8 +25,9 @@ import {
 } from '../utils/gameLogic';
 import { toLowerTr } from '../utils/turkish';
 import { KEYS, loadJson, removeJson, saveJson } from '../utils/storage';
+import { useSettings } from './SettingsContext';
 
-export type GameStatus = 'playing' | 'won' | 'lost';
+export type { GameStatus };
 
 export interface Stats {
   gamesPlayed: number;
@@ -57,8 +63,12 @@ interface GameContextValue {
   guesses: string[];
   evaluations: GuessEvaluation[];
   currentGuess: string;
+  /** Aktif satırın hücre hücre durumu: kilitli (önceden açılmış) harfler dahil */
+  activeRow: ActiveCell[];
   status: GameStatus;
   stats: Stats;
+  /** Kolay zorlukta açık gösterilecek harf indeksi (gün bazlı, deterministik) */
+  hintIndex: number;
   /** Klavye tuşlarının o ana kadarki en iyi durumu */
   keyStates: Record<string, LetterState>;
   invalidReason: InvalidReason;
@@ -92,8 +102,10 @@ function applyGameEnd(stats: Stats, dayIndex: number, won: boolean, guessCount: 
 }
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
+  const { difficulty } = useSettings();
   const [dayIndex, setDayIndex] = useState(() => getDayIndex());
   const answer = useMemo(() => getDailyWord(), [dayIndex]);
+  const hintIndex = useMemo(() => getHintIndexForDay(dayIndex, WORD_LENGTH), [dayIndex]);
   const [guesses, setGuesses] = useState<string[]>([]);
   const [currentGuess, setCurrentGuess] = useState('');
   const [status, setStatus] = useState<GameStatus>('playing');
@@ -129,12 +141,27 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     saveJson(KEYS.dailyState, next);
   }, []);
 
+  const evaluations = useMemo(
+    () => guesses.map((g) => evaluateGuess(g, answer)),
+    [guesses, answer]
+  );
+
+  // Kolay modda ipucu harfi + önceki tahminlerde yeşil bulunan harfler aktif
+  // satırda kilitli gelir; yazılan harfler yalnızca boş hücrelere akar.
+  const locked = useMemo(
+    () => computeLockedLetters(answer, evaluations, { easy: difficulty === 'easy', hintIndex }),
+    [answer, evaluations, difficulty, hintIndex]
+  );
+  const lockedRef = useRef(locked);
+  lockedRef.current = locked;
+
   const addLetter = useCallback(
     (letter: string) => {
       if (statusRef.current !== 'playing') return;
       setInvalidReason(null);
+      const unlockedCount = lockedRef.current.filter((l) => l == null).length;
       setCurrentGuess((g) =>
-        g.length < WORD_LENGTH ? g + toLowerTr(letter) : g
+        g.length < unlockedCount ? g + toLowerTr(letter) : g
       );
     },
     []
@@ -148,11 +175,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const submitGuess = useCallback(() => {
     if (statusRef.current !== 'playing') return;
-    const guess = currentGuessRef.current;
-    if (guess.length < WORD_LENGTH) {
+    const lockedNow = lockedRef.current;
+    const typed = currentGuessRef.current;
+    const unlockedCount = lockedNow.filter((l) => l == null).length;
+    if (typed.length < unlockedCount) {
       setInvalidReason('tooShort');
       return;
     }
+    const guess = composeActiveRow(lockedNow, typed)
+      .map((c) => c.letter)
+      .join('');
     if (!isValidWord(guess)) {
       setInvalidReason('notInList');
       return;
@@ -177,11 +209,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       });
     }
   }, [answer, dayIndex, persistDaily]);
-
-  const evaluations = useMemo(
-    () => guesses.map((g) => evaluateGuess(g, answer)),
-    [guesses, answer]
-  );
 
   const keyStates = useMemo(() => {
     const rank: Record<LetterState, number> = { absent: 0, present: 1, correct: 2 };
@@ -218,8 +245,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     guesses,
     evaluations,
     currentGuess,
+    activeRow: composeActiveRow(locked, currentGuess),
     status,
     stats,
+    hintIndex,
     keyStates,
     invalidReason,
     loaded,

@@ -2,12 +2,16 @@ import React from 'react';
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import AppModal from './AppModal';
 import { useGame } from '../context/GameContext';
+import { useEndlessGame } from '../context/EndlessContext';
+import { useFantasyGame } from '../context/FantasyContext';
+import { GameMode } from '../context/ModeContext';
 import { useSettings } from '../context/SettingsContext';
 import { getWordForDayIndex } from '../utils/gameLogic';
 import { buildShareText } from '../utils/share';
 import { toUpperTr } from '../utils/turkish';
 
 interface Props {
+  mode: GameMode;
   visible: boolean;
   onClose: () => void;
 }
@@ -21,14 +25,12 @@ function StatBox({ value, label, color }: { value: string; label: string; color:
   );
 }
 
-export default function StatsModal({ visible, onClose }: Props) {
+function DailyStatsContent() {
   const { stats, status, evaluations, dayIndex } = useGame();
   const { theme, colorBlind } = useSettings();
   const yesterdayWord = dayIndex > 0 ? getWordForDayIndex(dayIndex - 1) : null;
   const winPct =
-    stats.gamesPlayed > 0
-      ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100)
-      : 0;
+    stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0;
   const maxDist = Math.max(1, ...stats.distribution);
   const finished = status !== 'playing';
 
@@ -42,7 +44,7 @@ export default function StatsModal({ visible, onClose }: Props) {
   };
 
   return (
-    <AppModal visible={visible} title="İstatistikler" onClose={onClose}>
+    <>
       <View style={styles.statsRow}>
         <StatBox value={String(stats.gamesPlayed)} label="Oyun" color={theme.text} />
         <StatBox value={`%${winPct}`} label="Kazanma" color={theme.text} />
@@ -94,6 +96,35 @@ export default function StatsModal({ visible, onClose }: Props) {
           </Text>
         </Text>
       )}
+    </>
+  );
+}
+
+function RoundStatsContent({ mode }: { mode: 'endless' | 'fantasy' }) {
+  // Provider'lar modan bağımsız her zaman monte edildiğinden iki hook'u da
+  // koşulsuz çağırmak güvenli — hangi context'in kullanılacağını sonradan seçeriz
+  // (hook çağrı sırasını mod değişse bile sabit tutmak için).
+  const endless = useEndlessGame();
+  const fantasy = useFantasyGame();
+  const { stats } = mode === 'endless' ? endless : fantasy;
+  const { theme } = useSettings();
+  const winPct =
+    stats.roundsPlayed > 0 ? Math.round((stats.roundsWon / stats.roundsPlayed) * 100) : 0;
+
+  return (
+    <View style={styles.statsRow}>
+      <StatBox value={String(stats.roundsPlayed)} label="Tur" color={theme.text} />
+      <StatBox value={`%${winPct}`} label="Kazanma" color={theme.text} />
+      <StatBox value={String(stats.currentStreak)} label="Seri" color={theme.text} />
+      <StatBox value={String(stats.maxStreak)} label="En Uzun Seri" color={theme.text} />
+    </View>
+  );
+}
+
+export default function StatsModal({ mode, visible, onClose }: Props) {
+  return (
+    <AppModal visible={visible} title="İstatistikler" onClose={onClose}>
+      {mode === 'daily' ? <DailyStatsContent /> : <RoundStatsContent mode={mode} />}
     </AppModal>
   );
 }

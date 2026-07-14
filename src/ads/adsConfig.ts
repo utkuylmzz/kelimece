@@ -3,19 +3,19 @@ import { Platform } from 'react-native';
 /**
  * AdMob reklam birimi kimlikleri.
  *
- * ŞU AN GOOGLE'IN RESMİ TEST ID'LERİ KULLANILIYOR.
- * Yayına almadan önce AdMob konsolunda oluşturduğunuz gerçek reklam birimi
- * ID'lerini buraya yazın. Uygulama kimliği (App ID) ise app.json içindeki
- * "react-native-google-mobile-ads" eklenti ayarında güncellenmelidir.
+ * Android: gerçek AdMob ID'leri kullanılıyor.
+ * iOS: henüz AdMob'da uygulama oluşturulmadığından Google'ın test ID'leri
+ * kullanılıyor — iOS'a çıkarken AdMob konsolunda ayrı bir iOS uygulaması ve
+ * reklam birimleri oluşturup buradaki ve app.json'daki iosAppId'yi güncelleyin.
  */
 export const AD_UNIT_IDS = {
   banner: Platform.select({
     ios: 'ca-app-pub-3940256099942544/2934735716', // TEST — gerçek iOS banner ID ile değiştirin
-    default: 'ca-app-pub-3940256099942544/6300978111', // TEST — gerçek Android banner ID ile değiştirin
+    default: 'ca-app-pub-4610058472211087/5271091249', // Android banner (gerçek)
   })!,
   interstitial: Platform.select({
     ios: 'ca-app-pub-3940256099942544/4411468910', // TEST — gerçek iOS geçiş reklamı ID ile değiştirin
-    default: 'ca-app-pub-3940256099942544/1033173712', // TEST — gerçek Android geçiş reklamı ID ile değiştirin
+    default: 'ca-app-pub-4610058472211087/4358454506', // Android geçiş reklamı (gerçek)
   })!,
 };
 

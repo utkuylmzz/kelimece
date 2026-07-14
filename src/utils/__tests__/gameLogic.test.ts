@@ -1,4 +1,6 @@
 import {
+  composeActiveRow,
+  computeLockedLetters,
   evaluateGuess,
   getDailyWord,
   getDayIndex,
@@ -119,5 +121,51 @@ describe('günün kelimesi', () => {
 
   it('MAX_GUESSES sabiti 6', () => {
     expect(MAX_GUESSES).toBe(6);
+  });
+});
+
+describe('kilitli hücreler (kolay mod / ipucu)', () => {
+  it('kolay modda ipucu harfi kilitlenir', () => {
+    const locked = computeLockedLetters('kalem', [], { easy: true, hintIndex: 2 });
+    expect(locked).toEqual([null, null, 'l', null, null]);
+  });
+
+  it('zor modda ipucu kilitlenmez, oturum ipucusu kilitlenir', () => {
+    const locked = computeLockedLetters('kalem', [], {
+      easy: false,
+      hintIndex: 2,
+      sessionHintIndex: 4,
+    });
+    expect(locked).toEqual([null, null, null, null, 'm']);
+  });
+
+  it('kolay modda yeşil bulunan harfler sonraki tahminde kilitlenir', () => {
+    // tahmin "metal" → cevap "kalem": hiçbir konum correct değil
+    // tahmin "kaval" → k,a correct
+    const evals = [evaluateGuess('kaval', 'kalem')];
+    const locked = computeLockedLetters('kalem', evals, { easy: true, hintIndex: 4 });
+    expect(locked).toEqual(['k', 'a', null, null, 'm']);
+  });
+
+  it('composeActiveRow yazılan harfleri boş hücrelere soldan sağa yerleştirir', () => {
+    const locked = [null, 'a', null, null, 'm'] as (string | null)[];
+    const row = composeActiveRow(locked, 'kl');
+    expect(row.map((c) => c.letter)).toEqual(['k', 'a', 'l', '', 'm']);
+    expect(row.map((c) => c.locked)).toEqual([false, true, false, false, true]);
+  });
+
+  it('composeActiveRow kilitli yoksa klasik davranışa eşdeğerdir', () => {
+    const locked = [null, null, null, null, null] as (string | null)[];
+    const row = composeActiveRow(locked, 'kal');
+    expect(row.map((c) => c.letter)).toEqual(['k', 'a', 'l', '', '']);
+  });
+
+  it('tam dolu satır birleştirildiğinde geçerli kelimeyi verir', () => {
+    const locked = computeLockedLetters('kalem', [], { easy: true, hintIndex: 0 });
+    const word = composeActiveRow(locked, 'alem')
+      .map((c) => c.letter)
+      .join('');
+    expect(word).toBe('kalem');
+    expect(isValidWord(word)).toBe(true);
   });
 });

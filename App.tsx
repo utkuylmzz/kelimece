@@ -1,12 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { adsModule } from './src/ads/adsConfig';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import { EndlessProvider } from './src/context/EndlessContext';
+import { FantasyProvider } from './src/context/FantasyContext';
 import { GameProvider } from './src/context/GameContext';
+import { ModeProvider } from './src/context/ModeContext';
 import { SettingsProvider, useSettings } from './src/context/SettingsContext';
 import GameScreen from './src/screens/GameScreen';
+import MenuScreen from './src/screens/MenuScreen';
 
 // Logo hızlı cihazlarda göz açıp kapayana kadar kaybolduğu için açılış
 // ekranı en az SPLASH_MIN_MS boyunca ekranda tutuluyor.
@@ -16,10 +20,16 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function Root() {
   const { isDark } = useSettings();
+  // Basit iki ekranlı akış (menü ↔ oyun) için navigasyon kütüphanesi gereksiz.
+  const [inGame, setInGame] = useState(false);
   return (
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <GameScreen />
+      {inGame ? (
+        <GameScreen onBack={() => setInGame(false)} />
+      ) : (
+        <MenuScreen onPlay={() => setInGame(true)} />
+      )}
     </>
   );
 }
@@ -47,9 +57,15 @@ export default function App() {
     <ErrorBoundary>
       <SafeAreaProvider>
         <SettingsProvider>
-          <GameProvider>
-            <Root />
-          </GameProvider>
+          <ModeProvider>
+            <GameProvider>
+              <EndlessProvider>
+                <FantasyProvider>
+                  <Root />
+                </FantasyProvider>
+              </EndlessProvider>
+            </GameProvider>
+          </ModeProvider>
         </SettingsProvider>
       </SafeAreaProvider>
     </ErrorBoundary>
